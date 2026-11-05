@@ -1,0 +1,422 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Which meter sensors?",
+        "description": "Choose the cumulative energy sensors for the energy you buy from the grid and, if you have them, the energy you send back and a controlled load register. A cost sensor is created for each.",
+        "data": {
+          "name": "Name",
+          "import_entity": "Grid import energy sensor",
+          "export_entity": "Grid export energy sensor (optional)",
+          "controlled_load_entity": "Controlled load energy sensor (optional)",
+          "currency": "Currency"
+        },
+        "data_description": {
+          "import_entity": "Must measure energy bought from the grid (not whole-house consumption). Wh, kWh and MWh sensors work.",
+          "export_entity": "Energy sent to the grid. Leave empty if you have no solar.",
+          "controlled_load_entity": "Energy on a separately metered controlled load circuit, if your bill has controlled load lines."
+        }
+      },
+      "bill": {
+        "title": "How does your bill print prices?",
+        "description": "Look at the usage and supply charge lines on your electricity bill.",
+        "data": {
+          "price_unit": "Prices are printed in",
+          "rates_include_gst": "Prices include GST",
+          "discount_percent": "Discount",
+          "discount_scope": "The discount applies to",
+          "window_time": "Time windows follow",
+          "holiday_state": "Public holidays",
+          "holidays_as": "On public holidays use"
+        },
+        "data_description": {
+          "rates_include_gst": "Most Australian bills show GST-inclusive prices. Untick if yours are GST-exclusive and 10% is added. Feed-in is never given GST.",
+          "discount_percent": "A guaranteed discount percentage, if your plan has one. Leave at 0 if the prices you enter already have it applied.",
+          "discount_scope": "Most plans discount usage only; some also discount the daily supply charge. Check the discount line on your bill.",
+          "window_time": "Most Victorian, NSW and SA plans use the clock on the wall, so windows move with daylight saving. Some plans (for example in Tasmania and the ACT) define windows in standard time, so they appear an hour later on the clock during daylight saving. Your plan's fact sheet will say.",
+          "holiday_state": "Choose your state or territory if your plan treats public holidays differently from normal days.",
+          "holidays_as": "Some plans have no peak rates on public holidays, treating them like a weekend. Others treat them as normal days."
+        }
+      },
+      "charges": {
+        "title": "Daily charges",
+        "description": "Enter these exactly as printed on your bill. The supply charge is a fixed amount for each day.",
+        "data": {
+          "supply_charge": "Daily supply charge ({day_unit})",
+          "extra_daily": "Other fixed daily charge or credit ({day_unit})",
+          "controlled_load_supply_charge": "Controlled load daily supply charge ({day_unit})"
+        },
+        "data_description": {
+          "extra_daily": "For example a daily membership fee, or a daily credit entered as a negative number. Leave at 0 if none."
+        }
+      },
+      "structure": {
+        "title": "How are your usage rates structured?",
+        "description": "Pick the closest match. Typical time windows are filled in for you and you only type in the prices from your bill; you can change any window. Choose a step structure if your price changes after a number of kWh per day, or Custom to build your own.",
+        "data": {
+          "template": "Rate structure"
+        }
+      },
+      "periods": {
+        "title": "Usage rates",
+        "description": "{progress}.\n\nEnter the usage price for each time window on your bill.\n\nTimes are local clock time. An end time earlier than the start runs past midnight, and the same start and end means all day. Windows must cover every minute of every day exactly once.\n\nAdded so far:\n{periods}",
+        "data": {
+          "name": "Name",
+          "start": "Starts",
+          "end": "Ends",
+          "rate": "Price ({kwh_unit})",
+          "step_kwh": "Allowance, kWh per reset period (optional)",
+          "rate_after": "Price after the allowance ({kwh_unit})",
+          "days": "Applies on",
+          "add_another": "Add another rate after this one",
+          "start_over": "Discard the rates above and start again"
+        },
+        "data_description": {
+          "step_kwh": "Leave empty unless the price changes after a number of kWh. Examples: the first 11 kWh per day at one price and the rest at another (step rates); a free window that is only free up to a daily cap; feed-in paid at a higher rate for the first kWh exported each day.",
+          "rate_after": "Only needed when you fill in an allowance."
+        }
+      },
+      "feed_in_structure": {
+        "title": "How is your solar feed-in paid?",
+        "description": "Choose a single flat rate, a higher rate for the first kWh exported each day (tiered), or different rates at different times of day.",
+        "data": {
+          "template": "Rate structure"
+        }
+      },
+      "feed_in_periods": {
+        "title": "Feed-in rates",
+        "description": "{progress}.\n\nEnter what you are paid per kWh exported. For a tiered feed-in, put the higher rate in Price and the daily kWh it applies to in Allowance, then the standard rate in Price after the allowance. Negative prices are allowed.\n\nTimes are local clock time. An end time earlier than the start runs past midnight, and the same start and end means all day. Windows must cover every minute of every day exactly once.\n\nAdded so far:\n{periods}",
+        "data": {
+          "name": "Name",
+          "start": "Starts",
+          "end": "Ends",
+          "rate": "Price ({kwh_unit})",
+          "step_kwh": "Allowance, kWh per reset period (optional)",
+          "rate_after": "Price after the allowance ({kwh_unit})",
+          "days": "Applies on",
+          "add_another": "Add another rate after this one",
+          "start_over": "Discard the rates above and start again"
+        },
+        "data_description": {
+          "step_kwh": "Leave empty unless the price changes after a number of kWh. Examples: the first 11 kWh per day at one price and the rest at another (step rates); a free window that is only free up to a daily cap; feed-in paid at a higher rate for the first kWh exported each day.",
+          "rate_after": "Only needed when you fill in an allowance."
+        }
+      },
+      "cl_structure": {
+        "title": "Controlled load rates",
+        "description": "Controlled load (for example hot water on its own meter register) usually has one price all day.",
+        "data": {
+          "template": "Rate structure"
+        }
+      },
+      "cl_periods": {
+        "title": "Controlled load rates",
+        "description": "{progress}.\n\nEnter the controlled load usage price.\n\nTimes are local clock time. An end time earlier than the start runs past midnight, and the same start and end means all day. Windows must cover every minute of every day exactly once.\n\nAdded so far:\n{periods}",
+        "data": {
+          "name": "Name",
+          "start": "Starts",
+          "end": "Ends",
+          "rate": "Price ({kwh_unit})",
+          "step_kwh": "Allowance, kWh per reset period (optional)",
+          "rate_after": "Price after the allowance ({kwh_unit})",
+          "days": "Applies on",
+          "add_another": "Add another rate after this one",
+          "start_over": "Discard the rates above and start again"
+        },
+        "data_description": {
+          "step_kwh": "Leave empty unless the price changes after a number of kWh. Examples: the first 11 kWh per day at one price and the rest at another (step rates); a free window that is only free up to a daily cap; feed-in paid at a higher rate for the first kWh exported each day.",
+          "rate_after": "Only needed when you fill in an allowance."
+        }
+      },
+      "extras": {
+        "title": "Anything else on your bill?",
+        "description": "Optional. Skip this if neither applies to your plan.",
+        "data": {
+          "demand_enabled": "My plan has a demand charge",
+          "step_reset_days": "Allowances reset every (days)",
+          "step_anchor": "Allowance cycle starts on (only if longer than 1 day)"
+        },
+        "data_description": {
+          "demand_enabled": "A charge based on your highest half-hour demand (kW) during a peak window.",
+          "step_reset_days": "1 for allowances that reset daily (most common). Use your billing period length for allowances such as 'first 1,000 kWh per quarter'.",
+          "step_anchor": "A date when one of your allowance periods began."
+        }
+      },
+      "demand": {
+        "title": "Demand charge",
+        "description": "The charge is your highest 30 minute average demand in kW inside the window, in a calendar month, times the price. Use the same units as your bill.",
+        "data": {
+          "demand_rate": "Demand price ({kw_unit})",
+          "demand_basis": "Charged",
+          "demand_start": "Window starts",
+          "demand_end": "Window ends",
+          "demand_days": "Window applies on"
+        }
+      }
+    },
+    "error": {
+      "gap": "Some part of the week has no rate. Add another rate to fill the gap.",
+      "overlap": "Two rates overlap. Tick 'Discard the rates above' to start again.",
+      "no_periods": "Add at least one rate.",
+      "no_days": "Choose at least one day.",
+      "no_name": "Enter a name.",
+      "step_needs_rate": "Enter the price that applies after the allowance."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "AU Energy Tariff",
+        "menu_options": {
+          "general": "Charges, GST, discount and holidays",
+          "structure": "Usage rates and time windows",
+          "feed_in_structure": "Feed-in rates",
+          "cl_structure": "Controlled load rates",
+          "extras": "Demand charge and allowances"
+        }
+      },
+      "general": {
+        "title": "Charges and billing",
+        "data": {
+          "supply_charge": "Daily supply charge ({day_unit})",
+          "extra_daily": "Other fixed daily charge or credit ({day_unit})",
+          "controlled_load_supply_charge": "Controlled load daily supply charge ({day_unit})",
+          "rates_include_gst": "Prices include GST",
+          "discount_percent": "Discount",
+          "discount_scope": "The discount applies to",
+          "window_time": "Time windows follow",
+          "holiday_state": "Public holidays",
+          "holidays_as": "On public holidays use",
+          "max_power_kw": "Ignore meter jumps above this power"
+        },
+        "data_description": {
+          "extra_daily": "For example a daily membership fee, or a daily credit entered as a negative number. Leave at 0 if none.",
+          "rates_include_gst": "Most Australian bills show GST-inclusive prices. Untick if yours are GST-exclusive and 10% is added. Feed-in is never given GST.",
+          "discount_percent": "A guaranteed discount percentage, if your plan has one. Leave at 0 if the prices you enter already have it applied.",
+          "discount_scope": "Most plans discount usage only; some also discount the daily supply charge. Check the discount line on your bill.",
+          "window_time": "Most Victorian, NSW and SA plans use the clock on the wall, so windows move with daylight saving. Some plans (for example in Tasmania and the ACT) define windows in standard time, so they appear an hour later on the clock during daylight saving. Your plan's fact sheet will say.",
+          "holiday_state": "Choose your state or territory if your plan treats public holidays differently from normal days.",
+          "holidays_as": "Some plans have no peak rates on public holidays, treating them like a weekend. Others treat them as normal days.",
+          "max_power_kw": "Safety net: a counter step implying more than this average power is treated as a glitch and skipped rather than billed."
+        }
+      },
+      "structure": {
+        "title": "How are your usage rates structured?",
+        "description": "Pick the closest match. Typical time windows are filled in for you and you only type in the prices from your bill; you can change any window. Choose a step structure if your price changes after a number of kWh per day, or Custom to build your own.\n\nCurrently saved:\n{saved}",
+        "data": {
+          "template": "Rate structure"
+        }
+      },
+      "periods": {
+        "title": "Usage rates",
+        "description": "{progress}.\n\nEnter the usage price for each time window on your bill.\n\nTimes are local clock time. An end time earlier than the start runs past midnight, and the same start and end means all day. Windows must cover every minute of every day exactly once.\n\nCurrently saved:\n{saved}\n\nAdded so far:\n{periods}",
+        "data": {
+          "name": "Name",
+          "start": "Starts",
+          "end": "Ends",
+          "rate": "Price ({kwh_unit})",
+          "step_kwh": "Allowance, kWh per reset period (optional)",
+          "rate_after": "Price after the allowance ({kwh_unit})",
+          "days": "Applies on",
+          "add_another": "Add another rate after this one",
+          "start_over": "Discard the rates above and start again"
+        },
+        "data_description": {
+          "step_kwh": "Leave empty unless the price changes after a number of kWh. Examples: the first 11 kWh per day at one price and the rest at another (step rates); a free window that is only free up to a daily cap; feed-in paid at a higher rate for the first kWh exported each day.",
+          "rate_after": "Only needed when you fill in an allowance."
+        }
+      },
+      "feed_in_structure": {
+        "title": "How is your solar feed-in paid?",
+        "description": "Choose a single flat rate, a higher rate for the first kWh exported each day (tiered), or different rates at different times of day.\n\nCurrently saved:\n{saved}",
+        "data": {
+          "template": "Rate structure"
+        }
+      },
+      "feed_in_periods": {
+        "title": "Feed-in rates",
+        "description": "{progress}.\n\nEnter what you are paid per kWh exported. For a tiered feed-in, put the higher rate in Price and the daily kWh it applies to in Allowance, then the standard rate in Price after the allowance. Negative prices are allowed.\n\nTimes are local clock time. An end time earlier than the start runs past midnight, and the same start and end means all day. Windows must cover every minute of every day exactly once.\n\nCurrently saved:\n{saved}\n\nAdded so far:\n{periods}",
+        "data": {
+          "name": "Name",
+          "start": "Starts",
+          "end": "Ends",
+          "rate": "Price ({kwh_unit})",
+          "step_kwh": "Allowance, kWh per reset period (optional)",
+          "rate_after": "Price after the allowance ({kwh_unit})",
+          "days": "Applies on",
+          "add_another": "Add another rate after this one",
+          "start_over": "Discard the rates above and start again"
+        },
+        "data_description": {
+          "step_kwh": "Leave empty unless the price changes after a number of kWh. Examples: the first 11 kWh per day at one price and the rest at another (step rates); a free window that is only free up to a daily cap; feed-in paid at a higher rate for the first kWh exported each day.",
+          "rate_after": "Only needed when you fill in an allowance."
+        }
+      },
+      "cl_structure": {
+        "title": "Controlled load rates",
+        "description": "Controlled load (for example hot water on its own meter register) usually has one price all day.\n\nCurrently saved:\n{saved}",
+        "data": {
+          "template": "Rate structure"
+        }
+      },
+      "cl_periods": {
+        "title": "Controlled load rates",
+        "description": "{progress}.\n\nEnter the controlled load usage price.\n\nTimes are local clock time. An end time earlier than the start runs past midnight, and the same start and end means all day. Windows must cover every minute of every day exactly once.\n\nCurrently saved:\n{saved}\n\nAdded so far:\n{periods}",
+        "data": {
+          "name": "Name",
+          "start": "Starts",
+          "end": "Ends",
+          "rate": "Price ({kwh_unit})",
+          "step_kwh": "Allowance, kWh per reset period (optional)",
+          "rate_after": "Price after the allowance ({kwh_unit})",
+          "days": "Applies on",
+          "add_another": "Add another rate after this one",
+          "start_over": "Discard the rates above and start again"
+        },
+        "data_description": {
+          "step_kwh": "Leave empty unless the price changes after a number of kWh. Examples: the first 11 kWh per day at one price and the rest at another (step rates); a free window that is only free up to a daily cap; feed-in paid at a higher rate for the first kWh exported each day.",
+          "rate_after": "Only needed when you fill in an allowance."
+        }
+      },
+      "extras": {
+        "title": "Anything else on your bill?",
+        "description": "Optional. Skip this if neither applies to your plan.",
+        "data": {
+          "demand_enabled": "My plan has a demand charge",
+          "step_reset_days": "Allowances reset every (days)",
+          "step_anchor": "Allowance cycle starts on (only if longer than 1 day)"
+        },
+        "data_description": {
+          "demand_enabled": "A charge based on your highest half-hour demand (kW) during a peak window.",
+          "step_reset_days": "1 for allowances that reset daily (most common). Use your billing period length for allowances such as 'first 1,000 kWh per quarter'.",
+          "step_anchor": "A date when one of your allowance periods began."
+        }
+      },
+      "demand": {
+        "title": "Demand charge",
+        "description": "The charge is your highest 30 minute average demand in kW inside the window, in a calendar month, times the price. Use the same units as your bill.",
+        "data": {
+          "demand_rate": "Demand price ({kw_unit})",
+          "demand_basis": "Charged",
+          "demand_start": "Window starts",
+          "demand_end": "Window ends",
+          "demand_days": "Window applies on"
+        }
+      }
+    },
+    "error": {
+      "gap": "Some part of the week has no rate. Add another rate to fill the gap.",
+      "overlap": "Two rates overlap. Tick 'Discard the rates above' to start again.",
+      "no_periods": "Add at least one rate.",
+      "no_days": "Choose at least one day.",
+      "no_name": "Enter a name.",
+      "step_needs_rate": "Enter the price that applies after the allowance."
+    }
+  },
+  "selector": {
+    "price_unit": {
+      "options": {
+        "cents": "Cents (c/kWh, c/day)",
+        "dollars": "Dollars ($/kWh, $/day)"
+      }
+    },
+    "template": {
+      "options": {
+        "flat": "Single rate, all day",
+        "step": "Step rates (price changes after a number of kWh per day)",
+        "peak_offpeak": "Peak and off-peak",
+        "peak_shoulder_offpeak": "Peak, shoulder and off-peak",
+        "solar_soak": "Peak, off-peak and a midday solar-soak rate",
+        "free_midday": "Four rates including a free midday window",
+        "custom": "Custom (build my own)"
+      }
+    },
+    "feed_in_template": {
+      "options": {
+        "feed_flat": "One flat rate",
+        "feed_tiered": "Higher rate for the first kWh each day, then a standard rate",
+        "feed_time_varying": "Different rates at different times of day",
+        "custom": "Custom (build my own)"
+      }
+    },
+    "cl_template": {
+      "options": {
+        "cl_flat": "One price all day",
+        "custom": "Custom (build my own)"
+      }
+    },
+    "discount_scope": {
+      "options": {
+        "usage": "Usage charges only",
+        "usage_and_supply": "Usage and the daily supply charge"
+      }
+    },
+    "window_time": {
+      "options": {
+        "local": "The clock on the wall (moves with daylight saving)",
+        "standard": "Standard time all year (ignores daylight saving)"
+      }
+    },
+    "holiday_state": {
+      "options": {
+        "none": "Not used",
+        "ACT": "Australian Capital Territory",
+        "NSW": "New South Wales",
+        "NT": "Northern Territory",
+        "QLD": "Queensland",
+        "SA": "South Australia",
+        "TAS": "Tasmania",
+        "VIC": "Victoria",
+        "WA": "Western Australia"
+      }
+    },
+    "holidays_as": {
+      "options": {
+        "normal": "The normal weekday rates",
+        "weekend": "Weekend (Sunday) rates"
+      }
+    },
+    "demand_basis": {
+      "options": {
+        "day": "Per kW per day (for every day of the month)",
+        "month": "Per kW per month"
+      }
+    },
+    "weekday": {
+      "options": {
+        "0": "Monday",
+        "1": "Tuesday",
+        "2": "Wednesday",
+        "3": "Thursday",
+        "4": "Friday",
+        "5": "Saturday",
+        "6": "Sunday"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "import_cost": {
+        "name": "Import cost"
+      },
+      "export_credit": {
+        "name": "Export credit"
+      },
+      "controlled_load_cost": {
+        "name": "Controlled load cost"
+      },
+      "current_period": {
+        "name": "Current tariff"
+      },
+      "current_price": {
+        "name": "Current import price"
+      },
+      "current_feed_in_price": {
+        "name": "Current feed-in price"
+      },
+      "supply_charge_today": {
+        "name": "Supply charge today"
+      }
+    }
+  }
+}

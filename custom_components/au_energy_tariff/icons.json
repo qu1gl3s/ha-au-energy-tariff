@@ -1,0 +1,27 @@
+{
+  "entity": {
+    "sensor": {
+      "import_cost": {
+        "default": "mdi:transmission-tower-import"
+      },
+      "export_credit": {
+        "default": "mdi:transmission-tower-export"
+      },
+      "current_period": {
+        "default": "mdi:clock-time-four-outline"
+      },
+      "current_price": {
+        "default": "mdi:currency-usd"
+      },
+      "supply_charge_today": {
+        "default": "mdi:calendar-today"
+      },
+      "controlled_load_cost": {
+        "default": "mdi:water-boiler"
+      },
+      "current_feed_in_price": {
+        "default": "mdi:solar-power"
+      }
+    }
+  }
+}
