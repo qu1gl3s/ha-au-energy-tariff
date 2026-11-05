@@ -263,8 +263,9 @@ If your plan has one of these, the cost will be an approximation:
   following your exact billing dates.
 * **Price changes** are not dated: change the rates from the integration's
   options and only readings from then on use the new prices.
-* No backfill of past months yet (planned as a separate step using recorder
-  statistics import).
+* **No history before installation.** Cost is recorded from the moment the
+  integration is set up, so earlier days show no cost in the Energy dashboard.
+  The integration deliberately does not rewrite your recorder history.
 
 ## Development
 
