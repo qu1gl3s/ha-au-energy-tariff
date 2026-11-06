@@ -1,7 +1,5 @@
 {
   "name": "AU Energy Tariff",
   "render_readme": true,
-  "homeassistant": "2026.11.0",
-  "zip_release": true,
-  "filename": "au_energy_tariff.zip"
+  "homeassistant": "2026.11.0"
 }
