@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import struct
+from pathlib import Path
 
 import pytest
 
@@ -28,7 +28,13 @@ def test_brand_icons_are_square_pngs_with_transparency(name, size):
 
 def test_only_names_home_assistant_serves():
     allowed = {
-        "icon.png", "logo.png", "icon@2x.png", "logo@2x.png",
-        "dark_icon.png", "dark_logo.png", "dark_icon@2x.png", "dark_logo@2x.png",
+        "icon.png",
+        "logo.png",
+        "icon@2x.png",
+        "logo@2x.png",
+        "dark_icon.png",
+        "dark_logo.png",
+        "dark_icon@2x.png",
+        "dark_logo@2x.png",
     }
     assert {p.name for p in BRAND.iterdir()} <= allowed

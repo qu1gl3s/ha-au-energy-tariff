@@ -35,6 +35,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta, timezone, tzinfo
+from itertools import pairwise
 from typing import Any
 
 MINUTES_PER_DAY = 1440
@@ -403,9 +404,7 @@ class Tariff:
     @property
     def _supply_factor(self) -> float:
         """Multiplier turning the billed supply charge into dollars."""
-        discount = (
-            1.0 - self.discount_percent / 100.0 if self.discount_on_supply else 1.0
-        )
+        discount = 1.0 - self.discount_percent / 100.0 if self.discount_on_supply else 1.0
         return self._gst * discount / self.rate_divisor
 
     def _window_tz(self, at: datetime) -> tzinfo:
@@ -463,9 +462,7 @@ class Tariff:
 
     # -- energy cost ---------------------------------------------------------
 
-    def _segments(
-        self, start: datetime, end: datetime
-    ) -> list[tuple[datetime, datetime]]:
+    def _segments(self, start: datetime, end: datetime) -> list[tuple[datetime, datetime]]:
         """Split [start, end) at every rate boundary and local midnight."""
         start, end = start.astimezone(UTC), end.astimezone(UTC)
         points = {start, end}
@@ -493,7 +490,7 @@ class Tariff:
             day += timedelta(days=1)
 
         ordered = sorted(points)
-        return list(zip(ordered, ordered[1:], strict=False))
+        return list(pairwise(ordered))
 
     def energy_cost(
         self,
@@ -572,9 +569,7 @@ class Tariff:
     def _demand_covers(self, when: datetime) -> bool:
         assert self.demand is not None
         local = when.astimezone(self._window_tz(when))
-        return self.demand.window.covers(
-            local.hour * 60 + local.minute, self._weekday(local)
-        )
+        return self.demand.window.covers(local.hour * 60 + local.minute, self._weekday(local))
 
     def _close_interval(self, state: DemandState, interval: int, kwh: float) -> float:
         """Register a finished 30 minute interval; returns any extra cost."""

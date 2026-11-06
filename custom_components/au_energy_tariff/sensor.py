@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-import logging
-import math
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -94,7 +94,7 @@ def holiday_checker(state: str | None) -> Callable[[date], bool] | None:
     if not state or state == "none":
         return None
     try:
-        import holidays  # noqa: PLC0415
+        import holidays
     except ImportError:
         _LOGGER.warning("The 'holidays' library is unavailable; ignoring public holidays")
         return None
@@ -200,8 +200,12 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = [
         _CumulativeSensor(
-            entry, "import_cost", tariffs.usage, currency,
-            entry.data[CONF_IMPORT_ENTITY], max_power,
+            entry,
+            "import_cost",
+            tariffs.usage,
+            currency,
+            entry.data[CONF_IMPORT_ENTITY],
+            max_power,
         ),
         *(
             LiveSensor(entry, tariffs.usage, description)
@@ -214,14 +218,16 @@ async def async_setup_entry(
                 entry, "export_credit", tariffs.feed_in, currency, export_entity, max_power
             )
         )
-        entities.append(
-            LiveSensor(entry, tariffs.feed_in, _feed_in_price_description(currency))
-        )
+        entities.append(LiveSensor(entry, tariffs.feed_in, _feed_in_price_description(currency)))
     if cl_entity := entry.data.get(CONF_CL_ENTITY):
         entities.append(
             _CumulativeSensor(
-                entry, "controlled_load_cost", tariffs.controlled_load, currency,
-                cl_entity, max_power,
+                entry,
+                "controlled_load_cost",
+                tariffs.controlled_load,
+                currency,
+                cl_entity,
+                max_power,
             )
         )
     async_add_entities(entities)
@@ -355,9 +361,7 @@ class _CumulativeSensor(RestoreSensor):
         )
         # Daily charges are flat amounts, added at local midnight.
         self.async_on_remove(
-            async_track_time_change(
-                self.hass, self._async_new_day, hour=0, minute=0, second=0
-            )
+            async_track_time_change(self.hass, self._async_new_day, hour=0, minute=0, second=0)
         )
         if self._tariff.demand is not None:
             # Close each 30 minute demand interval promptly.
@@ -389,7 +393,7 @@ class _CumulativeSensor(RestoreSensor):
             self._supply_date = date.fromisoformat(raw_date) if raw_date else None
             self._blocks = BlockState.from_dict(data.get("blocks"))
             self._demand_state = DemandState.from_dict(data.get("demand"))
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             _LOGGER.warning("Could not restore %s; starting from zero", self.entity_id)
             self._energy_total = self._supply_total = self._demand_total = 0.0
             self._baseline_kwh = self._energy_ts = self._supply_date = None
@@ -486,9 +490,7 @@ class _CumulativeSensor(RestoreSensor):
 
     @callback
     def _async_flush_demand(self, _now: datetime) -> None:
-        self._demand_total += self._tariff.demand_flush(
-            self._demand_state, dt_util.utcnow()
-        )
+        self._demand_total += self._tariff.demand_flush(self._demand_state, dt_util.utcnow())
         self.async_write_ha_state()
 
 
@@ -516,7 +518,7 @@ def _live_descriptions(currency: str) -> list[_LiveDescription]:
         _LiveDescription(
             key="current_period",
             translation_key="current_period",
-            value_fn=lambda t, now: (p.name if (p := t.period_at(now)) else None),
+            value_fn=lambda t, now: p.name if (p := t.period_at(now)) else None,
         ),
         _LiveDescription(
             key="current_price",
@@ -573,9 +575,7 @@ class LiveSensor(SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         """Refresh at the top of every minute."""
-        self.async_on_remove(
-            async_track_time_change(self.hass, self._async_tick, second=0)
-        )
+        self.async_on_remove(async_track_time_change(self.hass, self._async_tick, second=0))
 
     @callback
     def _async_tick(self, _now: datetime) -> None:

@@ -8,16 +8,15 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from homeassistant.const import EVENT_STATE_CHANGED
+from homeassistant.core import HomeAssistant, State
+from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
     mock_restore_cache_with_extra_data,
 )
-
-from homeassistant.const import EVENT_STATE_CHANGED
-from homeassistant.core import HomeAssistant, State
-from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.util import dt as dt_util
 
 from custom_components.au_energy_tariff.const import (
     CONF_CL_ENTITY,
@@ -65,8 +64,12 @@ PERIODS = [
     {"name": "Off-peak", "start": "21:00", "end": "11:00", "rate": OFF_PEAK, "days": DAYS},
     {"name": "Solar soak", "start": "11:00", "end": "16:00", "rate": SOAK, "days": DAYS},
 ]
-FLAT_FEED_IN = [{"name": "Feed-in", "start": "00:00", "end": "00:00", "rate": FEED_IN, "days": DAYS}]
-FLAT_CL = [{"name": "Controlled load", "start": "00:00", "end": "00:00", "rate": 18.0, "days": DAYS}]
+FLAT_FEED_IN = [
+    {"name": "Feed-in", "start": "00:00", "end": "00:00", "rate": FEED_IN, "days": DAYS}
+]
+FLAT_CL = [
+    {"name": "Controlled load", "start": "00:00", "end": "00:00", "rate": 18.0, "days": DAYS}
+]
 
 
 def _utc(y, mo, d, h=0, mi=0, s=0) -> datetime:
@@ -74,7 +77,11 @@ def _utc(y, mo, d, h=0, mi=0, s=0) -> datetime:
 
 
 def _energy(unit: str = "kWh") -> dict:
-    return {"unit_of_measurement": unit, "state_class": "total_increasing", "device_class": "energy"}
+    return {
+        "unit_of_measurement": unit,
+        "state_class": "total_increasing",
+        "device_class": "energy",
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -280,9 +287,13 @@ async def test_first_run_publishes_the_starting_value_before_the_first_charge(
     seen: list[float] = []
 
     def _record(event) -> None:
-        if event.data["entity_id"] == COST and (new := event.data["new_state"]) is not None:
-            if new.state not in ("unknown", "unavailable"):
-                seen.append(float(new.state))
+        new = event.data["new_state"]
+        if (
+            event.data["entity_id"] == COST
+            and new is not None
+            and new.state not in ("unknown", "unavailable")
+        ):
+            seen.append(float(new.state))
 
     hass.bus.async_listen(EVENT_STATE_CHANGED, _record)
     await _setup(hass, supply=SUPPLY)
@@ -349,8 +360,15 @@ async def test_tiered_feed_in_pays_more_for_the_first_kwh_each_day(
     hass.states.async_set(IMPORT, "100", _energy())
     hass.states.async_set(EXPORT, "50", _energy())
     tiered = [
-        {"name": "Feed-in", "start": "00:00", "end": "00:00", "rate": 10.0, "days": DAYS,
-         "step_kwh": 8.0, "rate_after": 3.0}
+        {
+            "name": "Feed-in",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 10.0,
+            "days": DAYS,
+            "step_kwh": 8.0,
+            "rate_after": 3.0,
+        }
     ]
     await _setup(hass, export=True, feed_in_periods=tiered)
     freezer.tick(timedelta(hours=1))
@@ -464,7 +482,13 @@ async def test_demand_switched_on_after_the_sensor_started_charges_today(
 
 async def test_public_holiday_takes_weekend_rates(hass: HomeAssistant, freezer) -> None:
     weekday_weekend = [
-        {"name": "Weekday", "start": "00:00", "end": "00:00", "rate": 30.0, "days": [0, 1, 2, 3, 4]},
+        {
+            "name": "Weekday",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 30.0,
+            "days": [0, 1, 2, 3, 4],
+        },
         {"name": "Weekend", "start": "00:00", "end": "00:00", "rate": 10.0, "days": [5, 6]},
     ]
     # Mon 8 June 2026 is the King's Birthday holiday in Victoria.
@@ -486,7 +510,13 @@ async def test_public_holiday_takes_weekend_rates(hass: HomeAssistant, freezer) 
 
 async def test_holidays_ignored_unless_enabled(hass: HomeAssistant, freezer) -> None:
     weekday_weekend = [
-        {"name": "Weekday", "start": "00:00", "end": "00:00", "rate": 30.0, "days": [0, 1, 2, 3, 4]},
+        {
+            "name": "Weekday",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 30.0,
+            "days": [0, 1, 2, 3, 4],
+        },
         {"name": "Weekend", "start": "00:00", "end": "00:00", "rate": 10.0, "days": [5, 6]},
     ]
     freezer.move_to(_utc(2026, 6, 8, 2, 0))
@@ -569,12 +599,19 @@ async def test_restore_without_a_baseline_does_not_bill_the_whole_counter(
     assert _value(hass, COST) == 0.0
 
 
-async def test_restore_keeps_the_allowance_used_so_far_today(
-    hass: HomeAssistant, freezer
-) -> None:
+async def test_restore_keeps_the_allowance_used_so_far_today(hass: HomeAssistant, freezer) -> None:
     freezer.move_to(_utc(2026, 8, 12, 2, 0))  # 12:00 local on 12 Aug
-    step = [{"name": "Step", "start": "00:00", "end": "00:00", "rate": 30.0, "days": DAYS,
-             "step_kwh": 10.0, "rate_after": 40.0}]
+    step = [
+        {
+            "name": "Step",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 30.0,
+            "days": DAYS,
+            "step_kwh": 10.0,
+            "rate_after": 40.0,
+        }
+    ]
     extra = {
         "native_value": 3.0,
         "native_unit_of_measurement": "AUD",
@@ -600,7 +637,13 @@ async def test_restore_keeps_the_demand_maximum(hass: HomeAssistant, freezer) ->
         "baseline_kwh": 100.0,
         "energy_ts": _utc(2026, 8, 12, 5, 59).isoformat(),
         "supply_date": "2026-08-12",
-        "demand": {"month": "2026-08", "max_kw": 5.0, "days": 12, "interval": None, "interval_kwh": 0.0},
+        "demand": {
+            "month": "2026-08",
+            "max_kw": 5.0,
+            "days": 12,
+            "interval": None,
+            "interval_kwh": 0.0,
+        },
     }
     mock_restore_cache_with_extra_data(hass, ((State(COST, "1.0"), extra),))
     hass.states.async_set(IMPORT, "100", _energy())
@@ -703,9 +746,7 @@ async def _start_flow(
         charges[CONF_CL_SUPPLY_CHARGE] = 1.1
     result = await hass.config_entries.flow.async_configure(result["flow_id"], charges)
     assert result["step_id"] == "structure"
-    return await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"template": template}
-    )
+    return await hass.config_entries.flow.async_configure(result["flow_id"], {"template": template})
 
 
 async def _finish_extras(hass, result, *, demand: bool = False):
@@ -980,10 +1021,25 @@ async def test_options_picker_preselects_the_saved_structure(hass: HomeAssistant
 async def test_options_picker_preselects_feed_in_and_custom(hass: HomeAssistant) -> None:
     hass.states.async_set(IMPORT, "1", _energy())
     hass.states.async_set(EXPORT, "1", _energy())
-    tiered = [{"name": "Feed-in", "start": "00:00", "end": "00:00", "rate": 10.0,
-               "days": DAYS, "step_kwh": 8.0, "rate_after": 3.0}]
+    tiered = [
+        {
+            "name": "Feed-in",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 10.0,
+            "days": DAYS,
+            "step_kwh": 8.0,
+            "rate_after": 3.0,
+        }
+    ]
     weekday_weekend = [
-        {"name": "Weekday", "start": "00:00", "end": "00:00", "rate": 30.0, "days": [0, 1, 2, 3, 4]},
+        {
+            "name": "Weekday",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 30.0,
+            "days": [0, 1, 2, 3, 4],
+        },
         {"name": "Weekend", "start": "00:00", "end": "00:00", "rate": 10.0, "days": [5, 6]},
     ]
     entry = await _setup(hass, export=True, feed_in_periods=tiered, periods=weekday_weekend)

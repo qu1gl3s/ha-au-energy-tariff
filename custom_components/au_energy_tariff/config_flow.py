@@ -20,7 +20,6 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -157,11 +156,7 @@ def _describe(periods: list[dict[str, Any]], kwh_unit: str) -> str:
     lines = []
     for raw in periods:
         p = Period.from_dict(raw)
-        days = (
-            ""
-            if p.days == ALL_DAYS
-            else f" (days {','.join(str(d + 1) for d in p.days)})"
-        )
+        days = "" if p.days == ALL_DAYS else f" (days {','.join(str(d + 1) for d in p.days)})"
         allowance = ""
         if p.step_kwh is not None:
             after = p.rate if p.rate_after is None else p.rate_after
@@ -209,18 +204,16 @@ def _bill_schema(defaults: dict[str, Any], *, with_unit: bool) -> dict[Any, Any]
 def _charges_schema(defaults: dict[str, Any], price_unit: str, *, has_cl: bool) -> dict[Any, Any]:
     units = _units(price_unit)
     fields: dict[Any, Any] = {
-        vol.Required(
-            CONF_SUPPLY_CHARGE, default=defaults.get(CONF_SUPPLY_CHARGE, 0.0)
-        ): _number(units["day_unit"]),
-        vol.Required(
-            CONF_EXTRA_DAILY, default=defaults.get(CONF_EXTRA_DAILY, 0.0)
-        ): _number(units["day_unit"], minimum=-10000),
+        vol.Required(CONF_SUPPLY_CHARGE, default=defaults.get(CONF_SUPPLY_CHARGE, 0.0)): _number(
+            units["day_unit"]
+        ),
+        vol.Required(CONF_EXTRA_DAILY, default=defaults.get(CONF_EXTRA_DAILY, 0.0)): _number(
+            units["day_unit"], minimum=-10000
+        ),
     }
     if has_cl:
         fields[
-            vol.Required(
-                CONF_CL_SUPPLY_CHARGE, default=defaults.get(CONF_CL_SUPPLY_CHARGE, 0.0)
-            )
+            vol.Required(CONF_CL_SUPPLY_CHARGE, default=defaults.get(CONF_CL_SUPPLY_CHARGE, 0.0))
         ] = _number(units["day_unit"])
     return fields
 
@@ -230,25 +223,27 @@ def _extras_schema(defaults: dict[str, Any]) -> dict[Any, Any]:
         vol.Required(
             CONF_DEMAND_ENABLED, default=defaults.get(CONF_DEMAND_ENABLED, False)
         ): selector.BooleanSelector(),
-        vol.Required(
-            CONF_STEP_RESET_DAYS, default=defaults.get(CONF_STEP_RESET_DAYS, 1)
-        ): _number("days", minimum=1, maximum=366),
+        vol.Required(CONF_STEP_RESET_DAYS, default=defaults.get(CONF_STEP_RESET_DAYS, 1)): _number(
+            "days", minimum=1, maximum=366
+        ),
     }
     anchor = defaults.get(CONF_STEP_ANCHOR)
     fields[
-        vol.Optional(CONF_STEP_ANCHOR, **({"description": {"suggested_value": anchor}} if anchor else {}))
+        vol.Optional(
+            CONF_STEP_ANCHOR, **({"description": {"suggested_value": anchor}} if anchor else {})
+        )
     ] = selector.DateSelector()
     return fields
 
 
 def _demand_schema(defaults: dict[str, Any], price_unit: str) -> dict[Any, Any]:
     return {
-        vol.Required(
-            CONF_DEMAND_RATE, default=defaults.get(CONF_DEMAND_RATE, 0.0)
-        ): _number(_units(price_unit)["kw_unit"]),
-        vol.Required(
-            CONF_DEMAND_BASIS, default=defaults.get(CONF_DEMAND_BASIS, "day")
-        ): _select(["day", "month"], "demand_basis"),
+        vol.Required(CONF_DEMAND_RATE, default=defaults.get(CONF_DEMAND_RATE, 0.0)): _number(
+            _units(price_unit)["kw_unit"]
+        ),
+        vol.Required(CONF_DEMAND_BASIS, default=defaults.get(CONF_DEMAND_BASIS, "day")): _select(
+            ["day", "month"], "demand_basis"
+        ),
         vol.Required(
             CONF_DEMAND_START, default=f"{defaults.get(CONF_DEMAND_START, '16:00')}:00"
         ): selector.TimeSelector(),
@@ -292,27 +287,39 @@ class _FlowMixin:
 
     # -- template pickers and rate loops, one pair per schedule ----------------
 
-    async def async_step_structure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_structure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Usage: pick a typical structure."""
         return await self._structure(TARGET_USAGE, user_input)
 
-    async def async_step_periods(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_periods(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Usage: enter each rate."""
         return await self._period_form(TARGET_USAGE, user_input)
 
-    async def async_step_feed_in_structure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_feed_in_structure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Feed-in: pick flat, tiered or time-varying."""
         return await self._structure(TARGET_FEED_IN, user_input)
 
-    async def async_step_feed_in_periods(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_feed_in_periods(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Feed-in: enter each rate."""
         return await self._period_form(TARGET_FEED_IN, user_input)
 
-    async def async_step_cl_structure(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_cl_structure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Controlled load: pick a structure."""
         return await self._structure(TARGET_CL, user_input)
 
-    async def async_step_cl_periods(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_cl_periods(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Controlled load: enter each rate."""
         return await self._period_form(TARGET_CL, user_input)
 
@@ -334,9 +341,7 @@ class _FlowMixin:
                     CONF_TEMPLATE,
                     default=matching_template(target, self._saved(target))
                     or DEFAULT_TEMPLATE[target],
-                ): _select(
-                    TARGET_TEMPLATES[target], TEMPLATE_TRANSLATION[target]
-                )
+                ): _select(TARGET_TEMPLATES[target], TEMPLATE_TRANSLATION[target])
             }
         )
         kwh_unit = _units(self._price_unit)["kwh_unit"]
@@ -346,7 +351,9 @@ class _FlowMixin:
             description_placeholders={"saved": _describe(self._saved(target), kwh_unit)},
         )
 
-    async def _period_form(self, target: str, user_input: dict[str, Any] | None) -> ConfigFlowResult:
+    async def _period_form(
+        self, target: str, user_input: dict[str, Any] | None
+    ) -> ConfigFlowResult:
         step_id = PERIODS_STEP[target]
         errors: dict[str, str] = {}
         kwh_unit = _units(self._price_unit)["kwh_unit"]
@@ -380,9 +387,7 @@ class _FlowMixin:
                     if self._queue:
                         self._queue.pop(0)
                     if not (self._queue or user_input[CONF_ADD_ANOTHER]):
-                        problem = validate_periods(
-                            [Period.from_dict(p) for p in self._periods]
-                        )
+                        problem = validate_periods([Period.from_dict(p) for p in self._periods])
                         if problem is None:
                             self._schedules[target] = self._periods
                             return await self._async_schedule_done(target)
@@ -405,9 +410,7 @@ class _FlowMixin:
                 vol.Required(CONF_PERIOD_RATE, default=0): _number(kwh_unit, minimum=minimum),
                 vol.Optional(CONF_PERIOD_STEP_KWH): _number("kWh", maximum=100000),
                 vol.Optional(CONF_PERIOD_RATE_AFTER): _number(kwh_unit, minimum=minimum),
-                vol.Required(
-                    CONF_PERIOD_DAYS, default=[str(d) for d in ALL_DAYS]
-                ): _DAYS,
+                vol.Required(CONF_PERIOD_DAYS, default=[str(d) for d in ALL_DAYS]): _DAYS,
                 vol.Required(
                     CONF_ADD_ANOTHER, default=len(self._queue) > 1
                 ): selector.BooleanSelector(),
@@ -528,7 +531,9 @@ class AuEnergyTariffConfigFlow(_FlowMixin, ConfigFlow, domain=DOMAIN):
             step_id="bill", data_schema=vol.Schema(_bill_schema({}, with_unit=True))
         )
 
-    async def async_step_charges(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_charges(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Step 3: daily supply charge (and other daily amounts)."""
         if user_input is not None:
             self._out.update(user_input)
@@ -595,7 +600,9 @@ class AuEnergyTariffOptionsFlow(_FlowMixin, OptionsFlowWithReload):
         menu.append("extras")
         return self.async_show_menu(step_id="init", menu_options=menu)
 
-    async def async_step_general(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_general(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Edit charges, GST, discount, time basis, holidays and the glitch limit."""
         options = self._defaults()
         if user_input is not None:
