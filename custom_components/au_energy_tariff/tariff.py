@@ -222,6 +222,36 @@ def validate_periods(periods: Sequence[Period]) -> str | None:
     return None
 
 
+def matching_template(target: str, saved: Sequence[Mapping[str, Any]]) -> str | None:
+    """Return the template whose windows match the saved periods, or "custom".
+
+    Used to preselect the right structure when someone edits their rates.
+    Names and prices are ignored; the time windows, the days they apply on and
+    whether an allowance is used decide the match. Returns None if nothing is
+    saved yet.
+    """
+    if not saved:
+        return None
+    all_days = list(ALL_DAYS)
+    if any(sorted(p.get("days", all_days)) != all_days for p in saved):
+        return "custom"  # day-specific rates are only built by hand
+    windows = sorted((p["start"], p["end"]) for p in saved)
+    stepped = any(p.get("step_kwh") is not None for p in saved)
+    for key in TARGET_TEMPLATES[target]:
+        if key == "custom":
+            continue
+        if sorted((start, end) for _, start, end in TEMPLATES[key]) != windows:
+            continue
+        # One all-day window is shared by flat/step (and flat/tiered feed-in):
+        # an allowance tells them apart.
+        if key in ("step", "feed_tiered") and not stepped:
+            continue
+        if key in ("flat", "feed_flat") and stepped:
+            continue
+        return key
+    return "custom"
+
+
 def evaluate_reading(
     baseline_kwh: float | None,
     new_kwh: float,

@@ -20,6 +20,7 @@ from custom_components.au_energy_tariff.tariff import (
     Period,
     Tariff,
     evaluate_reading,
+    matching_template,
     parse_minutes,
     to_kwh,
     validate_periods,
@@ -599,3 +600,56 @@ def test_long_gap_allows_a_large_delta():
     delta, _, reason = evaluate_reading(5000.0, 5100.0, 4 * 3600, 50)
     assert reason == "ok"
     assert delta == 100.0
+
+
+# -- preselecting the saved structure -----------------------------------------
+
+
+def _saved(*periods: Period) -> list[dict]:
+    return [p.to_dict() for p in periods]
+
+
+def test_matching_template_finds_the_solar_soak_structure():
+    saved = _saved(*example().periods)
+    assert matching_template("usage", saved) == "solar_soak"
+
+
+def test_matching_template_ignores_names_and_prices():
+    saved = _saved(
+        Period("A", parse_minutes("16:00"), parse_minutes("21:00"), 1.0),
+        Period("B", parse_minutes("21:00"), parse_minutes("11:00"), 2.0),
+        Period("C", parse_minutes("11:00"), parse_minutes("16:00"), 3.0),
+    )
+    assert matching_template("usage", saved) == "solar_soak"
+
+
+def test_matching_template_tells_flat_from_step_by_the_allowance():
+    assert matching_template("usage", _saved(Period("x", 0, 0, 30.0))) == "flat"
+    stepped = _saved(Period("x", 0, 0, 30.0, step_kwh=10.0, rate_after=36.0))
+    assert matching_template("usage", stepped) == "step"
+
+
+def test_matching_template_feed_in_flat_and_tiered():
+    assert matching_template("feed_in", _saved(Period("f", 0, 0, 5.0))) == "feed_flat"
+    tiered = _saved(Period("f", 0, 0, 10.0, step_kwh=8.0, rate_after=3.0))
+    assert matching_template("feed_in", tiered) == "feed_tiered"
+
+
+def test_matching_template_controlled_load():
+    assert matching_template("controlled_load", _saved(Period("c", 0, 0, 18.0))) == "cl_flat"
+
+
+def test_matching_template_shoulder_with_two_windows_of_one_name():
+    saved = _saved(*[Period(n, parse_minutes(s), parse_minutes(e), 1.0) for n, s, e in TEMPLATES["peak_shoulder_offpeak"]])
+    assert matching_template("usage", saved) == "peak_shoulder_offpeak"
+
+
+def test_matching_template_is_custom_for_day_specific_or_unrecognised_rates():
+    weekday = _saved(Period("w", 0, 0, 30.0, (0, 1, 2, 3, 4)), Period("e", 0, 0, 10.0, (5, 6)))
+    assert matching_template("usage", weekday) == "custom"
+    odd = _saved(Period("a", 0, parse_minutes("12:00"), 1.0), Period("b", parse_minutes("12:00"), 0, 2.0))
+    assert matching_template("usage", odd) == "custom"
+
+
+def test_matching_template_is_none_when_nothing_is_saved():
+    assert matching_template("usage", []) is None

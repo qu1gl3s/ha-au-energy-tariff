@@ -923,3 +923,59 @@ async def test_options_flow_can_add_a_demand_charge(hass: HomeAssistant) -> None
     assert entry.options[CONF_DEMAND_BASIS] == "month"
     assert entry.options[CONF_DEMAND_DAYS] == [0, 1, 2, 3, 4]
     await hass.async_block_till_done()
+
+
+def _template_default(result) -> str:
+    keys = {str(k): k for k in result["data_schema"].schema}
+    return keys["template"].default()
+
+
+async def test_options_picker_preselects_the_saved_structure(hass: HomeAssistant) -> None:
+    hass.states.async_set(IMPORT, "1", _energy())
+    entry = await _setup(hass)  # saved usage windows match the solar-soak template
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "structure"}
+    )
+    assert _template_default(result) == "solar_soak"
+
+
+async def test_options_picker_preselects_feed_in_and_custom(hass: HomeAssistant) -> None:
+    hass.states.async_set(IMPORT, "1", _energy())
+    hass.states.async_set(EXPORT, "1", _energy())
+    tiered = [{"name": "Feed-in", "start": "00:00", "end": "00:00", "rate": 10.0,
+               "days": DAYS, "step_kwh": 8.0, "rate_after": 3.0}]
+    weekday_weekend = [
+        {"name": "Weekday", "start": "00:00", "end": "00:00", "rate": 30.0, "days": [0, 1, 2, 3, 4]},
+        {"name": "Weekend", "start": "00:00", "end": "00:00", "rate": 10.0, "days": [5, 6]},
+    ]
+    entry = await _setup(hass, export=True, feed_in_periods=tiered, periods=weekday_weekend)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "feed_in_structure"}
+    )
+    assert _template_default(result) == "feed_tiered"
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "structure"}
+    )
+    assert _template_default(result) == "custom"  # day-specific rates
+
+
+async def test_setup_wizard_still_defaults_to_flat(hass: HomeAssistant) -> None:
+    """A fresh wizard has nothing saved, so the picker offers the simplest default."""
+    hass.states.async_set(IMPORT, "1", _energy())
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": "user"})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"name": "Home", CONF_IMPORT_ENTITY: IMPORT, CONF_CURRENCY: "aud"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_PRICE_UNIT: "cents", CONF_RATES_INCLUDE_GST: True}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_SUPPLY_CHARGE: SUPPLY, CONF_EXTRA_DAILY: 0}
+    )
+    assert result["step_id"] == "structure"
+    assert _template_default(result) == "flat"

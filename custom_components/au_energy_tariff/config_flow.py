@@ -81,6 +81,7 @@ from .tariff import (
     TEMPLATES,
     Period,
     format_minutes,
+    matching_template,
     validate_periods,
 )
 
@@ -329,7 +330,11 @@ class _FlowMixin:
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_TEMPLATE, default=DEFAULT_TEMPLATE[target]): _select(
+                vol.Required(
+                    CONF_TEMPLATE,
+                    default=matching_template(target, self._saved(target))
+                    or DEFAULT_TEMPLATE[target],
+                ): _select(
                     TARGET_TEMPLATES[target], TEMPLATE_TRANSLATION[target]
                 )
             }
