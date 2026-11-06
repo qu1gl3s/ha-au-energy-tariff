@@ -1,0 +1,23 @@
+name: Release
+
+# Attaches au_energy_tariff.zip to each published release so HACS (and anyone
+# downloading by hand) gets exactly the integration folder.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    name: Build and attach zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Zip the integration
+        run: cd custom_components/au_energy_tariff && zip -r ../../au_energy_tariff.zip . -x "__pycache__/*"
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" au_energy_tariff.zip --clobber
