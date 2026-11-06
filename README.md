@@ -302,6 +302,8 @@ Then, in **Settings → Dashboards → Energy**:
 2. Add a second grid source. For its energy use **Supply charge** and for its
    cost use **Supply charge cost**.
 
+<img src="docs/images/energy-supply-row.jpg" width="45%" alt="The Energy tab Totals table with a separate Supply charge row">
+
 The Totals table then shows a **Supply charge** row with its own cost, beside
 your import and export rows, and the grand total still adds up. The row reads
 **0 kWh** because the supply charge has no energy, and the new template sensors
