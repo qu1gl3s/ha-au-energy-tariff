@@ -477,6 +477,17 @@ def test_per_day_demand_charge_tracks_the_monthly_maximum():
     assert state.max_kw == pytest.approx(4.0)
 
 
+def test_per_day_demand_switched_on_mid_day_charges_that_day():
+    """Enabling a demand charge part-way through a day: no daily step has run yet."""
+    tariff, state = demand_tariff("day", 20.0), DemandState()  # fresh, never saw demand_daily
+    tariff.demand_register(state, local(2026, 8, 12, 17), local(2026, 8, 12, 17, 30), 1.5)  # 3 kW
+    cost = tariff.demand_flush(state, local(2026, 8, 12, 17, 31))
+    assert cost == pytest.approx(0.20 * 3.0 * 1)  # one day, not zero
+    # The next midnight adds the second day on the month's maximum so far.
+    assert tariff.demand_daily(state, date(2026, 8, 13)) == pytest.approx(0.20 * 3.0)
+    assert state.days == 2
+
+
 def test_per_month_demand_charge_is_charged_on_new_maxima_only():
     tariff, state = demand_tariff("month", 700.0), DemandState()
     assert tariff.demand_daily(state, date(2026, 8, 1)) == 0.0

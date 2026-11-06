@@ -425,6 +425,43 @@ async def test_demand_charge_accrues_from_the_peak_half_hour(hass: HomeAssistant
 # -- public holidays ---------------------------------------------------------------
 
 
+async def test_demand_switched_on_after_the_sensor_started_charges_today(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Options-flow reload mid-day: the sensor restores, then demand starts counting."""
+    freezer.move_to(_utc(2026, 8, 12, 6, 0))  # 16:00 local
+    extra = {  # a sensor that has been running today, with no demand state yet
+        "native_value": 1.0,
+        "native_unit_of_measurement": "AUD",
+        "energy_total": 0.1,
+        "supply_total": 0.9,
+        "baseline_kwh": 1000.0,
+        "energy_ts": _utc(2026, 8, 12, 6, 0).isoformat(),  # exactly at the window start
+        "supply_date": "2026-08-12",
+    }
+    mock_restore_cache_with_extra_data(hass, ((State(COST, "1.0"), extra),))
+    hass.states.async_set(IMPORT, "1000", _energy())
+    await _setup(
+        hass,
+        options={
+            CONF_DEMAND_ENABLED: True,
+            CONF_DEMAND_RATE: 20.0,
+            CONF_DEMAND_BASIS: "day",
+            CONF_DEMAND_START: "16:00",
+            CONF_DEMAND_END: "21:00",
+            CONF_DEMAND_DAYS: DAYS,
+        },
+    )
+    freezer.move_to(_utc(2026, 8, 12, 6, 30))
+    await _step(hass, IMPORT, "1001.5")  # 3 kW over the first half hour
+    freezer.move_to(_utc(2026, 8, 12, 6, 30, 10))
+    async_fire_time_changed(hass, _utc(2026, 8, 12, 6, 30, 10))
+    await hass.async_block_till_done()
+    attrs = hass.states.get(COST).attributes
+    assert attrs["peak_demand_kw"] == pytest.approx(3.0)
+    assert attrs["demand_charge"] == pytest.approx(0.20 * 3.0)  # charged for today
+
+
 async def test_public_holiday_takes_weekend_rates(hass: HomeAssistant, freezer) -> None:
     weekday_weekend = [
         {"name": "Weekday", "start": "00:00", "end": "00:00", "rate": 30.0, "days": [0, 1, 2, 3, 4]},
@@ -979,3 +1016,20 @@ async def test_setup_wizard_still_defaults_to_flat(hass: HomeAssistant) -> None:
     )
     assert result["step_id"] == "structure"
     assert _template_default(result) == "flat"
+
+
+async def test_rate_fields_start_at_zero_not_at_the_negative_minimum(hass: HomeAssistant) -> None:
+    """HA shows a number box's minimum when there is no default: -10000 for feed-in."""
+    result = await _start_flow(hass, "flat", export=True)
+    keys = {str(k): k for k in result["data_schema"].schema}
+    assert keys["rate"].default() == 0
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], _period("Flat rate", "00:00:00", "00:00:00", 30.0)
+    )
+    assert result["step_id"] == "feed_in_structure"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"template": "feed_flat"}
+    )
+    keys = {str(k): k for k in result["data_schema"].schema}
+    assert result["step_id"] == "feed_in_periods"
+    assert keys["rate"].default() == 0  # not the field's minimum of -10000

@@ -585,6 +585,10 @@ class Tariff:
             return 0.0
         if not self._demand_roll(state, self._month_key(istart, self.tz)):
             return 0.0  # a late interval from a previous month
+        # A demand charge switched on part-way through a day has not had its
+        # daily step yet (that only happens at midnight), but the day the peak
+        # was set in still counts as a charged day.
+        state.days = max(state.days, 1)
         kw = kwh * 3600 / DEMAND_INTERVAL_SECONDS
         if kw <= state.max_kw:
             return 0.0

@@ -400,7 +400,9 @@ class _FlowMixin:
                 vol.Required(
                     CONF_PERIOD_END, default=f"{head.get('end', '00:00')}:00"
                 ): selector.TimeSelector(),
-                vol.Required(CONF_PERIOD_RATE): _number(kwh_unit, minimum=minimum),
+                # An explicit default: otherwise Home Assistant's number box shows
+                # the field's minimum, which for feed-in (negatives allowed) is -10000.
+                vol.Required(CONF_PERIOD_RATE, default=0): _number(kwh_unit, minimum=minimum),
                 vol.Optional(CONF_PERIOD_STEP_KWH): _number("kWh", maximum=100000),
                 vol.Optional(CONF_PERIOD_RATE_AFTER): _number(kwh_unit, minimum=minimum),
                 vol.Required(
