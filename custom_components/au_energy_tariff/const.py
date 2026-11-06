@@ -51,7 +51,8 @@ DEFAULT_CURRENCY = "AUD"
 DEFAULT_PRICE_UNIT = "cents"
 DEFAULT_MAX_POWER_KW = 50.0
 
-HOLIDAY_STATES = ["none", "ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]
+# Lowercase because Home Assistant translation keys must be [a-z0-9-_]+.
+HOLIDAY_STATES = ["none", "act", "nsw", "nt", "qld", "sa", "tas", "vic", "wa"]
 
 # Schedules the wizard can collect. Each has its own template list.
 TARGET_USAGE = "usage"

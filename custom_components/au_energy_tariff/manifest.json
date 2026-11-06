@@ -8,5 +8,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/qu1gl3s/ha-au-energy-tariff/issues",
   "requirements": ["holidays>=0.50"],
-  "version": "0.1.0"
+  "version": "1.0.0"
 }

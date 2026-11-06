@@ -360,14 +360,14 @@
     "holiday_state": {
       "options": {
         "none": "Not used",
-        "ACT": "Australian Capital Territory",
-        "NSW": "New South Wales",
-        "NT": "Northern Territory",
-        "QLD": "Queensland",
-        "SA": "South Australia",
-        "TAS": "Tasmania",
-        "VIC": "Victoria",
-        "WA": "Western Australia"
+        "act": "Australian Capital Territory",
+        "nsw": "New South Wales",
+        "nt": "Northern Territory",
+        "qld": "Queensland",
+        "sa": "South Australia",
+        "tas": "Tasmania",
+        "vic": "Victoria",
+        "wa": "Western Australia"
       }
     },
     "holidays_as": {

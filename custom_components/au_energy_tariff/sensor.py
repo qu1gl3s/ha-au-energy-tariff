@@ -98,7 +98,7 @@ def holiday_checker(state: str | None) -> Callable[[date], bool] | None:
     except ImportError:
         _LOGGER.warning("The 'holidays' library is unavailable; ignoring public holidays")
         return None
-    calendar = holidays.Australia(subdiv=state)
+    calendar = holidays.Australia(subdiv=state.upper())  # stored lowercase; accept either
     return lambda day: day in calendar
 
 

@@ -497,7 +497,7 @@ async def test_public_holiday_takes_weekend_rates(hass: HomeAssistant, freezer) 
     await _setup(
         hass,
         periods=weekday_weekend,
-        options={CONF_HOLIDAY_STATE: "VIC", CONF_HOLIDAYS_AS: "weekend"},
+        options={CONF_HOLIDAY_STATE: "vic", CONF_HOLIDAYS_AS: "weekend"},
     )
     assert hass.states.get("sensor.test_current_tariff").state == "Weekend"
 
@@ -733,7 +733,7 @@ async def _start_flow(
             CONF_DISCOUNT_PERCENT: 5,
             CONF_DISCOUNT_SCOPE: "usage_and_supply",
             CONF_WINDOW_TIME: "standard",
-            CONF_HOLIDAY_STATE: "VIC",
+            CONF_HOLIDAY_STATE: "vic",
             CONF_HOLIDAYS_AS: "weekend",
         },
     )
@@ -793,7 +793,7 @@ async def test_template_wizard_prefills_windows_and_creates_entry(hass: HomeAssi
     assert options[CONF_DISCOUNT_PERCENT] == 5
     assert options[CONF_DISCOUNT_SCOPE] == "usage_and_supply"
     assert options[CONF_WINDOW_TIME] == "standard"
-    assert options[CONF_HOLIDAY_STATE] == "VIC"
+    assert options[CONF_HOLIDAY_STATE] == "vic"
     assert options[CONF_HOLIDAYS_AS] == "weekend"
     assert options[CONF_DEMAND_ENABLED] is False
     await hass.async_block_till_done()
@@ -936,14 +936,14 @@ async def test_options_flow_edits_charges(hass: HomeAssistant) -> None:
             CONF_DISCOUNT_PERCENT: 0,
             CONF_DISCOUNT_SCOPE: "usage",
             CONF_WINDOW_TIME: "standard",
-            CONF_HOLIDAY_STATE: "NSW",
+            CONF_HOLIDAY_STATE: "nsw",
             CONF_HOLIDAYS_AS: "weekend",
             CONF_MAX_POWER_KW: 60,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options[CONF_WINDOW_TIME] == "standard"
-    assert entry.options[CONF_HOLIDAY_STATE] == "NSW"
+    assert entry.options[CONF_HOLIDAY_STATE] == "nsw"
     assert entry.options[CONF_SUPPLY_CHARGE] == 100.0
     assert entry.options[CONF_RATES_INCLUDE_GST] is False
     assert entry.options[CONF_PERIODS] == PERIODS  # untouched
@@ -1089,3 +1089,25 @@ async def test_rate_fields_start_at_zero_not_at_the_negative_minimum(hass: HomeA
     keys = {str(k): k for k in result["data_schema"].schema}
     assert result["step_id"] == "feed_in_periods"
     assert keys["rate"].default() == 0  # not the field's minimum of -10000
+
+
+async def test_holiday_state_is_accepted_in_either_case(hass: HomeAssistant, freezer) -> None:
+    """Older entries stored upper case ("VIC"); new ones are lower case ("vic")."""
+    weekday_weekend = [
+        {
+            "name": "Weekday",
+            "start": "00:00",
+            "end": "00:00",
+            "rate": 30.0,
+            "days": [0, 1, 2, 3, 4],
+        },
+        {"name": "Weekend", "start": "00:00", "end": "00:00", "rate": 10.0, "days": [5, 6]},
+    ]
+    freezer.move_to(_utc(2026, 6, 8, 2, 0))  # King's Birthday, a Monday holiday in Victoria
+    hass.states.async_set(IMPORT, "1", _energy())
+    await _setup(
+        hass,
+        periods=weekday_weekend,
+        options={CONF_HOLIDAY_STATE: "VIC", CONF_HOLIDAYS_AS: "weekend"},
+    )
+    assert hass.states.get("sensor.test_current_tariff").state == "Weekend"
