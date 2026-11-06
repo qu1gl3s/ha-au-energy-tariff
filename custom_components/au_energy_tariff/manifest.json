@@ -1,12 +1,19 @@
 {
   "domain": "au_energy_tariff",
   "name": "AU Energy Tariff",
-  "codeowners": ["@qu1gl3s"],
+  "categories": [
+    "energy.energy_prices"
+  ],
+  "codeowners": [
+    "@qu1gl3s"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/qu1gl3s/ha-au-energy-tariff",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/qu1gl3s/ha-au-energy-tariff/issues",
-  "requirements": ["holidays>=0.50"],
+  "requirements": [
+    "holidays>=0.50"
+  ],
   "version": "1.0.0"
 }
