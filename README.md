@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon.svg" width="128" alt="AU Energy Tariff icon"></p>
+
 # AU Energy Tariff
 
 A Home Assistant integration that turns your **Australian electricity bill**
@@ -276,6 +278,12 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements_test.txt
 
 The tariff maths in `custom_components/au_energy_tariff/tariff.py` has no Home
 Assistant dependency. Tests use invented rates only.
+
+## Credits
+
+The Australian flag in the icon is the waved flag from Google's
+[Noto Emoji](https://github.com/googlefonts/noto-emoji) region flags, which are
+public domain. The icon's source is `assets/icon.svg`.
 
 ## Licence
 
