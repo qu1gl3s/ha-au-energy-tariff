@@ -1,0 +1,32 @@
+name: Bug report
+description: Something isn't working as described.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Please do not post your account number, NMI, name or address.** Redact anything personal from logs and screenshots.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: For example the setup choices you made, or the options screen you used.
+  - type: input
+    id: versions
+    attributes:
+      label: Integration and Home Assistant versions
+      placeholder: "AU Energy Tariff 1.0.0, Home Assistant 2026.11"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: "Add `custom_components.au_energy_tariff: debug` under `logger:` in `configuration.yaml`, reproduce the problem, then paste the relevant lines."
+      render: text

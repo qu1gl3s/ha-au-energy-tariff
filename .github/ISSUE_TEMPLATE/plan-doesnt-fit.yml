@@ -1,0 +1,48 @@
+name: My plan doesn't price correctly
+description: A rate, charge or feature on your bill can't be entered, or the cost doesn't match your bill.
+labels: ["plan-support"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make this work for more Australian plans.
+
+        **Please do not post your account number, NMI, name or address.** Black out or crop anything personal from bill photos. The rate lines are all that's needed.
+  - type: dropdown
+    id: state
+    attributes:
+      label: State or territory
+      options: [ACT, NSW, NT, QLD, SA, TAS, VIC, WA]
+    validations:
+      required: true
+  - type: input
+    id: plan
+    attributes:
+      label: Retailer and plan name
+      description: Optional, but it helps others on the same plan.
+  - type: textarea
+    id: structure
+    attributes:
+      label: How your plan charges you
+      description: List each usage rate with its time window and days, the daily supply charge, any feed-in, controlled load or demand charge, and any discount. Say whether prices include GST and whether they are in cents or dollars.
+      placeholder: |
+        Peak 4pm-9pm weekdays: 41.5 c/kWh
+        Off-peak all other times: 22.0 c/kWh
+        Supply: 92 c/day
+        Feed-in: 3.5 c/kWh
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What doesn't fit
+      description: Which line on the bill can't be entered, or how the integration's cost differs from your bill (with the bill's period and the amounts).
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Integration and Home Assistant versions
+      placeholder: "AU Energy Tariff 1.0.0, Home Assistant 2026.11"
+    validations:
+      required: true
