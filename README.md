@@ -54,7 +54,7 @@ The cost sensors expose a breakdown as attributes (`energy`, `supply_charge`,
 local day, at midnight. If Home Assistant was off, the missed days are added
 when it starts. Daily and monthly totals are exact; the hourly cost graph shows
 the charge as one step at midnight. Installing mid-afternoon charges that
-day's supply charge immediately, as a bill would.
+day's supply charge a few seconds after setup, as a bill would.
 
 > Home Assistant only allows `total` (not `total_increasing`) as the state
 > class for monetary sensors. Cost sensors therefore use `total`.

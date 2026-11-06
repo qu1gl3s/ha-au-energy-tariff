@@ -14,8 +14,10 @@ from pytest_homeassistant_custom_component.common import (
     mock_restore_cache_with_extra_data,
 )
 
+from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import HomeAssistant, State
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.util import dt as dt_util
 
 from custom_components.au_energy_tariff.const import (
     CONF_CL_ENTITY,
@@ -127,6 +129,13 @@ def _value(hass: HomeAssistant, entity_id: str) -> float:
     return float(hass.states.get(entity_id).state)
 
 
+async def _first_charge(hass: HomeAssistant, freezer) -> None:
+    """Let a brand new sensor add its first day's charges (a few seconds after setup)."""
+    freezer.tick(timedelta(seconds=6))
+    async_fire_time_changed(hass, dt_util.utcnow())
+    await hass.async_block_till_done()
+
+
 async def _step(hass, entity: str, value: str, unit="kWh"):
     hass.states.async_set(entity, value, _energy(unit))
     await hass.async_block_till_done()
@@ -234,6 +243,8 @@ async def test_supply_charge_is_a_flat_daily_step(hass: HomeAssistant, freezer) 
     freezer.move_to(_utc(2026, 8, 11, 14, 0))  # local midnight, 12 Aug
     hass.states.async_set(IMPORT, "100", _energy())
     await _setup(hass, supply=SUPPLY)
+    assert _value(hass, COST) == 0.0  # the starting value is published first
+    await _first_charge(hass, freezer)
     assert _value(hass, COST) == pytest.approx(SUPPLY / 100)
 
     freezer.move_to(_utc(2026, 8, 11, 20, 0))
@@ -252,7 +263,54 @@ async def test_other_daily_credit_reduces_the_daily_total(hass: HomeAssistant, f
     freezer.move_to(_utc(2026, 8, 11, 14, 0))
     hass.states.async_set(IMPORT, "100", _energy())
     await _setup(hass, supply=SUPPLY, options={CONF_EXTRA_DAILY: -20.0})
+    await _first_charge(hass, freezer)
     assert _value(hass, COST) == pytest.approx((SUPPLY - 20.0) / 100)
+
+
+async def test_first_run_publishes_the_starting_value_before_the_first_charge(
+    hass: HomeAssistant, freezer
+) -> None:
+    """Long-term statistics start from a sensor's first recorded value.
+
+    If the first day's supply charge were already in that first value it would
+    be missing from the statistics, so a new sensor publishes 0 first.
+    """
+    freezer.move_to(_utc(2026, 8, 11, 14, 0))
+    hass.states.async_set(IMPORT, "100", _energy())
+    seen: list[float] = []
+
+    def _record(event) -> None:
+        if event.data["entity_id"] == COST and (new := event.data["new_state"]) is not None:
+            if new.state not in ("unknown", "unavailable"):
+                seen.append(float(new.state))
+
+    hass.bus.async_listen(EVENT_STATE_CHANGED, _record)
+    await _setup(hass, supply=SUPPLY)
+    assert seen and seen[0] == 0.0
+    assert all(value == 0.0 for value in seen)  # nothing charged yet
+
+    await _first_charge(hass, freezer)
+    assert seen[-1] == pytest.approx(SUPPLY / 100)
+
+
+async def test_restart_of_an_existing_sensor_still_catches_up_immediately(
+    hass: HomeAssistant, freezer
+) -> None:
+    freezer.move_to(_utc(2026, 8, 12, 6, 0))
+    extra = {
+        "native_value": 1.0,
+        "native_unit_of_measurement": "AUD",
+        "energy_total": 0.0,
+        "supply_total": 1.0,
+        "baseline_kwh": 100.0,
+        "energy_ts": _utc(2026, 8, 12, 5, 59).isoformat(),
+        "supply_date": "2026-08-11",  # yesterday was the last day charged
+    }
+    mock_restore_cache_with_extra_data(hass, ((State(COST, "1.0"), extra),))
+    hass.states.async_set(IMPORT, "100", _energy())
+    await _setup(hass, supply=SUPPLY)
+    # No waiting for a delayed charge: today is added as soon as it starts.
+    assert _value(hass, COST) == pytest.approx(1.0 + SUPPLY / 100)
 
 
 async def test_supply_charge_is_one_per_day_across_a_dst_change(
@@ -262,6 +320,7 @@ async def test_supply_charge_is_one_per_day_across_a_dst_change(
     freezer.move_to(_utc(2026, 10, 3, 14, 0))
     hass.states.async_set(IMPORT, "100", _energy())
     await _setup(hass, supply=SUPPLY)
+    await _first_charge(hass, freezer)
     assert _value(hass, COST) == pytest.approx(SUPPLY / 100)
 
     freezer.move_to(_utc(2026, 10, 4, 13, 0))  # next local midnight (AEDT, +11)
@@ -321,6 +380,7 @@ async def test_controlled_load_has_its_own_rate_and_supply(hass: HomeAssistant, 
     hass.states.async_set(IMPORT, "100", _energy())
     hass.states.async_set(CL, "500", _energy())
     await _setup(hass, controlled_load=True, supply=SUPPLY, cl_supply=1.1)
+    await _first_charge(hass, freezer)
     # Daily supply: main supply on the import sensor, controlled-load supply on its own.
     assert _value(hass, COST) == pytest.approx(SUPPLY / 100)
     assert _value(hass, CL_COST) == pytest.approx(1.1 / 100)

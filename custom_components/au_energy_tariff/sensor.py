@@ -26,7 +26,11 @@ from homeassistant.const import (
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.event import async_track_state_change_event, async_track_time_change
+from homeassistant.helpers.event import (
+    async_call_later,
+    async_track_state_change_event,
+    async_track_time_change,
+)
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -78,6 +82,11 @@ from .tariff import (
 _LOGGER = logging.getLogger(__name__)
 
 PARALLEL_UPDATES = 0
+
+# On a sensor's very first run the starting value (0) is published first and the
+# first day's charges follow after this many seconds. Long-term statistics start
+# from a sensor's first recorded value, so this is what lets them include it.
+FIRST_CHARGE_DELAY = 5
 
 
 def holiday_checker(state: str | None) -> Callable[[date], bool] | None:
@@ -330,10 +339,13 @@ class _CumulativeSensor(RestoreSensor):
     async def async_added_to_hass(self) -> None:
         """Restore state, catch up on downtime, then start tracking."""
         await super().async_added_to_hass()
-        self._restore(await self.async_get_last_extra_data())
+        restored = await self.async_get_last_extra_data()
+        self._restore(restored)
+        first_run = restored is None
 
         now = dt_util.utcnow()
-        self._charge_supply_days(now)  # catches up any days missed while down
+        if not first_run:
+            self._charge_supply_days(now)  # catches up any days missed while down
         self._handle_state(self.hass.states.get(self._source_entity), now)
 
         self.async_on_remove(
@@ -355,6 +367,12 @@ class _CumulativeSensor(RestoreSensor):
                 )
             )
         self.async_write_ha_state()
+        if first_run:
+            # The starting value has been published; the first day's charges
+            # come next so they land inside the long-term statistics.
+            self.async_on_remove(
+                async_call_later(self.hass, FIRST_CHARGE_DELAY, self._async_first_charge)
+            )
 
     def _restore(self, extra: Any) -> None:
         if extra is None:
@@ -454,6 +472,11 @@ class _CumulativeSensor(RestoreSensor):
         now = dt_util.utcnow()
         self._charge_supply_days(now)
         self._handle_state(event.data["new_state"], now)
+        self.async_write_ha_state()
+
+    @callback
+    def _async_first_charge(self, _now: datetime) -> None:
+        self._charge_supply_days(dt_util.utcnow())
         self.async_write_ha_state()
 
     @callback
