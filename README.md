@@ -11,7 +11,14 @@ charge ([home-assistant/core#80306](https://github.com/home-assistant/core/issue
 But a grid source accepts a cumulative monetary statistic as its *total cost*
 (`stat_cost`) and its *total compensation* (`stat_compensation`). This
 integration publishes exactly those sensors, so the supply charge and your
-time-of-use costs show up natively in the Energy tab's totals and cost graphs.
+time-of-use costs are included in the Energy tab's cost totals and cost graphs.
+
+> **Where the supply charge shows up.** It is part of the **Import cost**, so
+> it is inside the cost the Energy tab shows for your grid import (in the
+> *Totals* table and the cost graphs). It is **not** a separate row by default:
+> the Energy dashboard has no concept of a fixed daily fee, and an integration
+> cannot add a line to it. If you want the supply charge on its own row, see
+> [Showing the supply charge as its own line](#showing-the-supply-charge-as-its-own-line).
 
 It is built to fit the wide range of Australian plans, not one retailer: a
 guided setup follows the layout of a bill, and anything that does not apply to
@@ -50,7 +57,8 @@ See *Limitations* for what is not covered.
 The cost sensors expose a breakdown as attributes (`energy`, `supply_charge`,
 `demand_charge`, `peak_demand_kw`) so you can reconcile them against a bill.
 
-**Supply charge:** it is a fixed amount per day, so it is added once for each
+**Supply charge:** it is added to the **Import cost** sensor (and is also shown
+in that sensor's `supply_charge` attribute). It is a fixed amount per day, so it is added once for each
 local day, at midnight. If Home Assistant was off, the missed days are added
 when it starts. Daily and monthly totals are exact; the hourly cost graph shows
 the charge as one step at midnight. Installing mid-afternoon charges that
@@ -234,6 +242,54 @@ and select **Export credit**. For controlled load add another grid source with
 
 New sensors record from the moment they are installed; earlier history is not
 rewritten.
+
+### Showing the supply charge as its own line
+
+By default the supply charge is folded into the import cost. Home Assistant
+allows more than one grid source in the Energy settings, and a grid source's row
+is named after its energy sensor, so you can split the supply charge out into
+its own row using ordinary template sensors (no changes to Home Assistant):
+
+```yaml
+template:
+  - sensor:
+      # A zero-energy sensor. It only exists to give the new row its name.
+      - name: "Supply charge"
+        unique_id: supply_charge_energy
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        state: "0"
+      # The supply charge, as a running cost.
+      - name: "Supply charge cost"
+        unique_id: supply_charge_cost
+        unit_of_measurement: AUD
+        device_class: monetary
+        state_class: total
+        state: "{{ state_attr('sensor.electricity_tariff_import_cost', 'supply_charge') | float(0) }}"
+      # Everything except the supply charge (usage plus any demand charge), so
+      # nothing is counted twice. Without a demand charge the second term is 0.
+      - name: "Import energy cost"
+        unique_id: import_energy_cost
+        unit_of_measurement: AUD
+        device_class: monetary
+        state_class: total
+        state: >-
+          {{ (state_attr('sensor.electricity_tariff_import_cost', 'energy') | float(0))
+             + (state_attr('sensor.electricity_tariff_import_cost', 'demand_charge') | float(0)) }}
+```
+
+Then, in **Settings → Dashboards → Energy**:
+
+1. On your existing grid source, use **Import energy cost** (not *Import cost*)
+   as the entity tracking the total costs.
+2. Add a second grid source. For its energy use **Supply charge** and for its
+   cost use **Supply charge cost**.
+
+The Totals table then shows a **Supply charge** row with its own cost, beside
+your import and export rows, and the grand total still adds up. The row reads
+**0 kWh** because the supply charge has no energy, and the new template sensors
+only record history from the day you add them.
 
 ## How it stays correct
 

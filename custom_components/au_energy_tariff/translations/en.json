@@ -40,7 +40,7 @@
       },
       "charges": {
         "title": "Daily charges",
-        "description": "Enter these exactly as printed on your bill. The supply charge is a fixed amount for each day.",
+        "description": "Enter these exactly as printed on your bill. The supply charge is a fixed amount for each day. It is added to the Import cost sensor, so it is included in the cost the Energy dashboard shows for your grid import.",
         "data": {
           "supply_charge": "Daily supply charge ({day_unit})",
           "extra_daily": "Other fixed daily charge or credit ({day_unit})",
