@@ -102,6 +102,17 @@ skipped):
 6. **Controlled load rates** (if you have it).
 7. **Extras.** A demand charge, and how often allowances reset.
 
+<p>
+  <img src="docs/images/setup-1-sensors.jpg" width="31%" alt="Choosing the meter sensors">
+  <img src="docs/images/setup-2-billing.jpg" width="31%" alt="How the bill prints prices">
+  <img src="docs/images/setup-3-daily-charges.jpg" width="31%" alt="Daily supply charge">
+</p>
+<p>
+  <img src="docs/images/setup-4-structure.jpg" width="31%" alt="Choosing a rate structure">
+  <img src="docs/images/setup-5-rates.jpg" width="31%" alt="Typing the price for each window">
+  <img src="docs/images/setup-6-extras.jpg" width="31%" alt="Demand charge and allowances">
+</p>
+
 | On your bill | In the wizard |
 | --- | --- |
 | "Supply charge", "Service to property" (per day) | Daily supply charge |
@@ -121,6 +132,11 @@ form tells you if there is a gap or an overlap. Each rate can be limited to
 certain days, so a "weekday / weekend" plan is just two all-day rates.
 
 You can change everything later from the integration's **Configure** screen.
+
+<p>
+  <img src="docs/images/options-menu.jpg" width="31%" alt="The Configure menu">
+  <img src="docs/images/device.jpg" width="31%" alt="The device page with its sensors">
+</p>
 
 ### Allowances: step rates, capped free power and tiered feed-in
 
